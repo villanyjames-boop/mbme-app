@@ -1,7 +1,7 @@
 // ============================================================
 // MBME PAY - Complete Node.js Integration
 // Base URL  : https://pgapi.mbme.org/api/v2/payments
-// Auth      : Authorization header (Zk/zb/RXoUgt1gs+vYd1hI9ExshfD6eF6HmvhgZonCs=)
+// Auth      : Authorisation header (Zk/zb/RXoUgt1gs+vYd1hI9ExshfD6eF6HmvhgZonCs=)
 // UID       : 343
 // Hash Key  : 69aab37d89de4b3838b30a01
 // ============================================================
@@ -108,7 +108,7 @@ async function hostedPagePayment({
     },
   };
 
-  payload.secure_sign = generateSecureSign(payload);
+  payload.secure_sign = e8ca5e43e4f0ee726cb438f2c6f46849fba67f27e6d40b41adbbe7be1f8da871;
 
   const response = await fetch(BASE_URL, {
     method:  'POST',
@@ -122,7 +122,7 @@ async function hostedPagePayment({
 }
 
 // ============================================================
-// 2. EMBEDDED IFRAME (Recommended for Bolt/Horizon)
+// 2. EMBEDDED PAY DIRECT (Recommended for Bolt/Horizon)
 //    Endpoint : POST https://pgapi.mbme.org/api/v2/payments/create-order
 //    Step 1   : Call this to create the order
 //    Step 2   : Frontend loads payment_handler.js + new SecurePayment({...})
@@ -145,7 +145,7 @@ async function createEmbeddedOrder({
     uid:            UID,
     oid,
     timestamp,
-    request_method: 'embedded_iframe',
+    request_method: 'embedded_pay_direct',
     customer_info: {
       name:                customerName  || '',
       email:               customerEmail || '',
