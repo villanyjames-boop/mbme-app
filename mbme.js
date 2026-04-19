@@ -35,8 +35,7 @@ function flattenForForm(obj, prefix = '') {
 
 function apiRequest(path, body) {
   return new Promise((resolve, reject) => {
-    const flat = flattenForForm(body);
-    const data = new URLSearchParams(flat).toString();
+    const data = JSON.stringify(body);
 
     const options = {
       hostname: BASE_URL,
@@ -44,8 +43,8 @@ function apiRequest(path, body) {
       path: path,
       method: 'POST',
       headers: {
-        'Content-Type':   'application/x-www-form-urlencoded',
-        'Authorization':  API_KEY,
+        ''Content-Type':   'application/json',
+        'Authorisation':  API_KEY,
         'Accept':         'application/json',
         'Content-Length': Buffer.byteLength(data)
       }
@@ -81,7 +80,7 @@ async function createEmbeddedOrder({
     uid:            UID,
     oid,
     timestamp,
-    request_method: 'embedded_pay_direct',
+    request_method: 'embedded_iframe',
     customer_info: {
       name:                customerName  || '',
       email:               customerEmail || '',
@@ -103,7 +102,7 @@ async function createEmbeddedOrder({
 
   payload.secure_sign = generateSecureSign(payload);
 
-  const data = await apiRequest('/api/v2/payments', payload);
+  const data = await apiRequest('/api/v2/payments/create-order', payload);
 
   const paymentUrl = data?.result?.payment_url
     || data?.data?.payment_url
