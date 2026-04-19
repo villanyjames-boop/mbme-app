@@ -2,9 +2,9 @@ const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 
 // ── Credentials (Recommended: Use process.env in Railway) ────
-const API_KEY  = process.env.MBME_API_KEY  || 'Esp5T/yvlmJtsjeup/Ug4cpkY9/8CIt24obJKpu7YrA=';
-const UID      = process.env.MBME_UID      || '343';
-const HASH_KEY = process.env.MBME_HASH_KEY || '69aab37d89de4b3838b30a01';
+const API_KEY  = 'Esp5T/yvlmJtsjeup/Ug4cpkY9/8CIt24obJKpu7YrA=';
+const UID      = '343';
+const HASH_KEY = '69aab37d89de4b3838b30a01';
 
 // ── Base URL ─────────────────────────────────────────────────
 const BASE_URL = 'https://pgapi.mbme.org/api/';
@@ -42,8 +42,7 @@ function generateSecureSign(payload) {
 // ── Standard Headers & Helpers ───────────────────────────────
 function getHeaders() {
   return {
-    'Authorization': API_KEY,
-    'Content-Type': 'application/json'
+    'Authorisation': API_KEY,
   };
 }
 
@@ -53,7 +52,7 @@ function getTimestamp() {
 
 // ============================================================
 // 1. HOSTED PAGE
-//    Endpoint: v2/payments/create-order
+//    Endpoint: /v2/payments/create-order
 // ============================================================
 async function hostedPagePayment({
   amount,
