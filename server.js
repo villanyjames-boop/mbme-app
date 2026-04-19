@@ -17,14 +17,20 @@ const {
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
-const SITE_URL = process.env.SITE_URL || 'https://yourdomain.com';
+const SITE_URL = process.env.SITE_URL || 'https://toohighdark.com';
+
+// ── CORS Fix ─────────────────────────────────────────────────
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') return res.sendStatus(200);
+  next();
+});
 
 app.use(express.json());
 
 // ── 1. Hosted Page ───────────────────────────────────────────
-// POST /api/pay/hosted
-// Body: { amount, currency?, name, email, phone, reference? }
-// Returns payment URL → redirect your customer there
 app.post('/api/pay/hosted', async (req, res) => {
   try {
     const result = await hostedPagePayment({
@@ -43,10 +49,7 @@ app.post('/api/pay/hosted', async (req, res) => {
   }
 });
 
-// ── 2. Embedded iFrame – Create Order ───────────────────────
-// POST /api/pay/embedded
-// Body: { amount, currency?, name, email, phone, reference? }
-// Returns: { oid, uid, timestamp } → pass to frontend SecurePayment widget
+// ── 2. Embedded iFrame ───────────────────────────────────────
 app.post('/api/pay/embedded', async (req, res) => {
   try {
     const result = await createEmbeddedOrder({
@@ -66,9 +69,6 @@ app.post('/api/pay/embedded', async (req, res) => {
 });
 
 // ── 3. Payment by Link ───────────────────────────────────────
-// POST /api/pay/link
-// Body: { amount, currency?, name, email, phone, reference? }
-// Returns: { paymentLink: "https://pgapi.mbme.org/pay/..." }
 app.post('/api/pay/link', async (req, res) => {
   try {
     const result = await createPaymentLink({
@@ -88,10 +88,6 @@ app.post('/api/pay/link', async (req, res) => {
 });
 
 // ── 4. Direct Pay ────────────────────────────────────────────
-// POST /api/pay/direct
-// Body: { amount, currency?, name, email, phone, reference?,
-//         card_number, card_cvv, card_expiry_month, card_expiry_year, card_name }
-// If response.status = AUTHENTICATED → redirect user to response.payment_info.payment_url
 app.post('/api/pay/direct', async (req, res) => {
   try {
     const result = await directPay({
@@ -119,8 +115,6 @@ app.post('/api/pay/direct', async (req, res) => {
 });
 
 // ── 5. Payment Status ────────────────────────────────────────
-// POST /api/pay/status
-// Body: { oid: "uuid-of-the-order" }
 app.post('/api/pay/status', async (req, res) => {
   try {
     const result = await checkPaymentStatus(req.body.oid);
@@ -131,8 +125,6 @@ app.post('/api/pay/status', async (req, res) => {
 });
 
 // ── 6. Refund ────────────────────────────────────────────────
-// POST /api/pay/refund
-// Body: { oid, amount, reason? }
 app.post('/api/pay/refund', async (req, res) => {
   try {
     const result = await processRefund({
@@ -146,34 +138,28 @@ app.post('/api/pay/refund', async (req, res) => {
   }
 });
 
-// ── 7. Webhook  (MBME calls this after every transaction) ────
-// Configure this URL in merchant portal → Account & Settings → Webhooks
-// URL to enter: https://yourdomain.com/api/webhook/mbme
+// ── 7. Webhook ───────────────────────────────────────────────
 app.post('/api/webhook/mbme', (req, res) => {
-  res.status(200).json({ received: true }); // respond immediately
+  res.status(200).json({ received: true });
 
   const { secure_sign, ...payload } = req.body;
 
   if (!verifyWebhook(payload, secure_sign)) {
-    console.error('[MBME Webhook] ❌ Invalid signature - possible tamper');
+    console.error('[MBME Webhook] Invalid signature');
     return;
   }
 
   const d = payload.data || {};
   console.log(`[MBME Webhook] Order: ${d.oid} | Status: ${d.status} | Ref: ${d.mbme_payment_id}`);
-
-  // ✅ Update your database here:
-  // if (d.status === 'APPROVED') { markOrderPaid(d.oid); }
-  // if (d.status === 'DECLINED') { markOrderFailed(d.oid); }
 });
 
-// ── Success / Failure redirect pages ────────────────────────
+// ── Success / Failure Pages ──────────────────────────────────
 app.get('/payment-success', (req, res) => {
   res.send(`
     <html><body style="font-family:sans-serif;text-align:center;padding:50px">
       <h1>✅ Payment Successful!</h1>
       <p>Thank you. Your transaction has been completed.</p>
-      <a href="/">Back to Home</a>
+      <a href="https://toohighdark.com">Back to Home</a>
     </body></html>
   `);
 });
@@ -183,7 +169,7 @@ app.get('/payment-failed', (req, res) => {
     <html><body style="font-family:sans-serif;text-align:center;padding:50px">
       <h1>❌ Payment Failed</h1>
       <p>Something went wrong. Please try again.</p>
-      <a href="/">Back to Home</a>
+      <a href="https://toohighdark.com/checkout">Try Again</a>
     </body></html>
   `);
 });
