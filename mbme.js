@@ -11,7 +11,7 @@ const { v4: uuidv4 } = require('uuid');
 
 // ── Credentials ──────────────────────────────────────────────
 const BASE_URL = 'https://pgapi.mbme.org/api/v2/payments';
-const API_KEY  = 'GQy1cphjivy53fBjEy/TohLkqW5j1Vdn2VjGfxXOjI8=';
+const API_KEY  = 'Zk/zb/RXoUgt1gs+vYd1hI9ExshfD6eF6HmvhgZonCs=';
 const UID      = '343';
 const HASH_KEY = '69aab37d89de4b3838b30a01';
 
