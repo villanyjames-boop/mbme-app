@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MBME Pay - Embedded Checkout</title>
+  <style>
+    body { font-family: sans-serif; max-width: 500px; margin: 40px auto; padding: 20px; }
+    input { width: 100%; padding: 10px; margin: 8px 0; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; }
+    button { width: 100%; padding: 12px; background: #844693; color: #fff; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; margin-top: 10px; }
+    button:hover { background: #6a3776; }
+    #payment-container { margin-top: 20px; }
+    #status { margin-top: 10px; color: green; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <h2>💳 Checkout</h2>
+
+  <!-- Step 1: Order form -->
+  <div id="order-form">
+    <input id="name"   placeholder="Full Name" />
+    <input id="email"  placeholder="Email" type="email" />
+    <input id="phone"  placeholder="Phone (e.g. 501234567)" />
+    <input id="amount" placeholder="Amount (AED)" type="number" />
+    <button onclick="startPayment()">Proceed to Pay</button>
+  </div>
+
+  <!-- Step 2: MBME iFrame loads here -->
+  <div id="payment-container"></div>
+  <div id="status"></div>
+
+  <!-- MBME Pay JS SDK -->
+  <script src="https://pgapi.mbme.org/scripts/payment_handler.js"></script>
+
+  <script>
+    async function startPayment() {
+      const name   = document.getElementById('name').value;
+      const email  = document.getElementById('email').value;
+      const phone  = document.getElementById('phone').value;
+      const amount = document.getElementById('amount').value;
+
+      if (!name || !email || !phone || !amount) {
+        alert('Please fill all fields');
+        return;
+      }
+
+      // Call your backend to create the order
+      const res = await fetch('/api/pay/embedded', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, phone, amount, currency: 'AED' }),
+      });
+
+      const data = await res.json();
+
+      if (data.status !== 'ORDER_CREATED') {
+        document.getElementById('status').innerText = '❌ ' + (data.status_message || 'Order failed');
+        document.getElementById('status').style.color = 'red';
+        return;
+      }
+
+      // Hide the form, show the payment widget
+      document.getElementById('order-form').style.display = 'none';
+
+      // Init MBME SecurePayment widget
+      const payment = new SecurePayment({
+        elementId:  'payment-container',
+        oid:        data.oid,
+        uid:        data.uid,
+        timestamp:  data.timestamp,
+        styles: {
+          container: {
+            backgroundColor: '#ffffff',
+            borderRadius:    '12px',
+            boxShadow:       '0 1px 3px rgba(0,0,0,0.12)',
+            padding:         '20px',
+            maxWidth:        '400px',
+            margin:          '0 auto',
+          },
+          title:  { fontSize: '20px', fontWeight: '600', color: '#844693', marginBottom: '12px' },
+          input:  { height: '38px', padding: '0 12px', fontSize: '14px', borderRadius: '4px', borderColor: '#dddddd' },
+          label:  { fontSize: '14px', color: '#844693', fontWeight: '500' },
+          button: { backgroundColor: '#844693', color: '#ffffff', fontSize: '14px', borderRadius: '4px', width: '100%' },
+        },
+      });
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "name": "mbme-pay-integration",
+  "version": "1.0.0",
+  "description": "MBME Pay Node.js integration - Bolt/Horizon ready",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.0",
+    "uuid": "^9.0.0"
+  }
+}
