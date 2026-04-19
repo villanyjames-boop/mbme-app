@@ -107,7 +107,16 @@ async function hostedPagePayment({
   });
 
   const data = await response.json();
-  if (!response.ok) throw new Error(data.status_message || 'Hosted payment failed');
+  if (!response.ok) {
+    console.error('MBME API Error:', {
+      endpoint: 'v2/payments/create-order',
+      status: response.status,
+      statusText: response.statusText,
+      data: data,
+      payload: payload,
+    });
+    throw new Error(data.status_message || 'Hosted payment failed');
+  }
   return data;
 }
 
@@ -166,7 +175,16 @@ async function createEmbeddedOrder({
   });
 
   const data = await response.json();
-  if (!response.ok) throw new Error(data.status_message || 'Order creation failed');
+  if (!response.ok) {
+    console.error('MBME API Error:', {
+      endpoint: 'v2/payments/create-order',
+      status: response.status,
+      statusText: response.statusText,
+      data: data,
+      payload: payload,
+    });
+    throw new Error(data.status_message || 'Order creation failed');
+  }
 
   return { ...data, oid, uid: UID, timestamp };
 }
@@ -230,7 +248,16 @@ async function createPaymentLink({
   });
 
   const data = await response.json();
-  if (!response.ok) throw new Error(data.status_message || 'Payment link creation failed');
+  if (!response.ok) {
+    console.error('MBME API Error:', {
+      endpoint: 'v2/payments/create-order',
+      status: response.status,
+      statusText: response.statusText,
+      data: data,
+      payload: payload,
+    });
+    throw new Error(data.status_message || 'Payment link creation failed');
+  }
   return data;
 }
 
@@ -293,7 +320,16 @@ async function directPay({
   });
 
   const data = await response.json();
-  if (!response.ok) throw new Error(data.status_message || 'Direct pay failed');
+  if (!response.ok) {
+    console.error('MBME API Error:', {
+      endpoint: 'v2/payments',
+      status: response.status,
+      statusText: response.statusText,
+      data: data,
+      payload: payload,
+    });
+    throw new Error(data.status_message || 'Direct pay failed');
+  }
   return data;
 }
 
@@ -320,7 +356,16 @@ async function checkPaymentStatus(oid) {
   });
 
   const data = await response.json();
-  if (!response.ok) throw new Error(data.status_message || 'Status check failed');
+  if (!response.ok) {
+    console.error('MBME API Error:', {
+      endpoint: 'v2/order',
+      status: response.status,
+      statusText: response.statusText,
+      data: data,
+      payload: payload,
+    });
+    throw new Error(data.status_message || 'Status check failed');
+  }
   return data;
 }
 
@@ -349,7 +394,16 @@ async function processRefund({ oid, amount, refundRemarks = 'Customer request' }
   });
 
   const data = await response.json();
-  if (!response.ok) throw new Error(data.status_message || 'Refund failed');
+  if (!response.ok) {
+    console.error('MBME API Error:', {
+      endpoint: 'v2/order',
+      status: response.status,
+      statusText: response.statusText,
+      data: data,
+      payload: payload,
+    });
+    throw new Error(data.status_message || 'Refund failed');
+  }
   return data;
 }
 
