@@ -1,22 +1,15 @@
-// ============================================================
-// MBME PAY - Complete Node.js Integration
-// Base URL  : https://pgapi.mbme.org/api/v2/payments/create-order
-// Auth      : Authorisation header (Esp5T/yvlmJtsjeup/Ug4cpkY9/8CIt24obJKpu7YrA=)
-// UID       : 343
-// Hash Key  : 69aab37d89de4b3838b30a01
-// ============================================================
-
 const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 
-// ── Credentials ──────────────────────────────────────────────
-const BASE_URL = 'https://pgapi.mbme.org/api/v2/payments/create-order';
-const API_KEY  = 'Esp5T/yvlmJtsjeup/Ug4cpkY9/8CIt24obJKpu7YrA=';
-const UID      = '343';
-const HASH_KEY = '69aab37d89de4b3838b30a01';
+// ── Credentials (Recommended: Use process.env in Railway) ────
+const API_KEY  = process.env.MBME_API_KEY  || 'Esp5T/yvlmJtsjeup/Ug4cpkY9/8CIt24obJKpu7YrA=';
+const UID      = process.env.MBME_UID      || '343';
+const HASH_KEY = process.env.MBME_HASH_KEY || '69aab37d89de4b3838b30a01';
+
+// ── Base URL ─────────────────────────────────────────────────
+const BASE_URL = 'https://pgapi.mbme.org/api/';
 
 // ── Secure Sign Generator ────────────────────────────────────
-// Flatten → sort keys alphabetically → join with & → HMAC-SHA256
 function generateSecureSign(payload) {
   function flatten(obj, prefix = '') {
     return Object.keys(obj).reduce((acc, key) => {
@@ -46,22 +39,21 @@ function generateSecureSign(payload) {
     .digest('hex');
 }
 
-// ── Standard Headers ─────────────────────────────────────────
+// ── Standard Headers & Helpers ───────────────────────────────
 function getHeaders() {
   return {
     'Authorization': API_KEY,
+    'Content-Type': 'application/json'
   };
 }
 
-// ── UTC Timestamp ────────────────────────────────────────────
 function getTimestamp() {
   return new Date().toISOString();
 }
 
 // ============================================================
 // 1. HOSTED PAGE
-//    Endpoint : POST https://pgapi.mbme.org/api/v2/payments/create-order
-//    Redirects customer to MBME secure payment page
+//    Endpoint: v2/payments/create-order
 // ============================================================
 async function hostedPagePayment({
   amount,
@@ -106,9 +98,9 @@ async function hostedPagePayment({
     },
   };
 
-  payload.secure_sign = e8ca5e43e4f0ee726cb438f2c6f46849fba67f27e6d40b41adbbe7be1f8da871;
+  payload.secure_sign = generateSecureSign(payload);
 
-  const response = await fetch(BASE_URL, {
+  const response = await fetch(`${BASE_URL}v2/payments/create-order`, {
     method:  'POST',
     headers: getHeaders(),
     body:    JSON.stringify(payload),
@@ -120,10 +112,8 @@ async function hostedPagePayment({
 }
 
 // ============================================================
-// 2. EMBEDDED PAY DIRECT (Recommended for Bolt/Horizon)
-//    Endpoint : POST https://pgapi.mbme.org/api/v2/payments/create-order
-//    Step 1   : Call this to create the order
-//    Step 2   : Frontend loads payment_handler.js + new SecurePayment({...})
+// 2. EMBEDDED PAY DIRECT
+//    Endpoint: v2/payments/create-order
 // ============================================================
 async function createEmbeddedOrder({
   amount,
@@ -169,7 +159,7 @@ async function createEmbeddedOrder({
 
   payload.secure_sign = generateSecureSign(payload);
 
-  const response = await fetch(`${BASE_URL}/create-order`, {
+  const response = await fetch(`${BASE_URL}v2/payments/create-order`, {
     method:  'POST',
     headers: getHeaders(),
     body:    JSON.stringify(payload),
@@ -178,14 +168,12 @@ async function createEmbeddedOrder({
   const data = await response.json();
   if (!response.ok) throw new Error(data.status_message || 'Order creation failed');
 
-  // Return oid, uid, timestamp — needed by frontend SecurePayment widget
   return { ...data, oid, uid: UID, timestamp };
 }
 
 // ============================================================
 // 3. PAYMENT BY LINK
-//    Endpoint : POST https://pgapi.mbme.org/api/v2/payments/create-order
-//    Returns a shareable payment URL
+//    Endpoint: v2/payments/create-order
 // ============================================================
 async function createPaymentLink({
   amount,
@@ -235,7 +223,7 @@ async function createPaymentLink({
 
   payload.secure_sign = generateSecureSign(payload);
 
-  const response = await fetch(`${BASE_URL}/create-order`, {
+  const response = await fetch(`${BASE_URL}v2/payments/create-order`, {
     method:  'POST',
     headers: getHeaders(),
     body:    JSON.stringify(payload),
@@ -243,12 +231,12 @@ async function createPaymentLink({
 
   const data = await response.json();
   if (!response.ok) throw new Error(data.status_message || 'Payment link creation failed');
-  return data; // data.data.payment_link = shareable URL
+  return data;
 }
 
 // ============================================================
-// 4. DIRECT PAY (server-to-server, requires PCI DSS)
-//    Endpoint : POST https://pgapi.mbme.org/api/v2/payments
+// 4. DIRECT PAY
+//    Endpoint: v2/payments
 // ============================================================
 async function directPay({
   amount,
@@ -298,7 +286,7 @@ async function directPay({
 
   payload.secure_sign = generateSecureSign(payload);
 
-  const response = await fetch(BASE_URL, {
+  const response = await fetch(`${BASE_URL}v2/payments`, {
     method:  'POST',
     headers: getHeaders(),
     body:    JSON.stringify(payload),
@@ -306,13 +294,12 @@ async function directPay({
 
   const data = await response.json();
   if (!response.ok) throw new Error(data.status_message || 'Direct pay failed');
-  // status=AUTHENTICATED → redirect user to data.payment_info.payment_url for OTP
   return data;
 }
 
 // ============================================================
 // 5. PAYMENT ENQUIRY
-//    Endpoint : POST https://pgapi.mbme.org/api/v2/order
+//    Endpoint: v2/order
 // ============================================================
 async function checkPaymentStatus(oid) {
   const timestamp = getTimestamp();
@@ -326,7 +313,7 @@ async function checkPaymentStatus(oid) {
 
   payload.secure_sign = generateSecureSign(payload);
 
-  const response = await fetch('https://pgapi.mbme.org/api/v2/order', {
+  const response = await fetch(`${BASE_URL}v2/order`, {
     method:  'POST',
     headers: getHeaders(),
     body:    JSON.stringify(payload),
@@ -339,7 +326,7 @@ async function checkPaymentStatus(oid) {
 
 // ============================================================
 // 6. REFUND
-//    Endpoint : POST https://pgapi.mbme.org/api/v2/order
+//    Endpoint: v2/order
 // ============================================================
 async function processRefund({ oid, amount, refundRemarks = 'Customer request' }) {
   const timestamp = getTimestamp();
@@ -355,7 +342,7 @@ async function processRefund({ oid, amount, refundRemarks = 'Customer request' }
 
   payload.secure_sign = generateSecureSign(payload);
 
-  const response = await fetch('https://pgapi.mbme.org/api/v2/order', {
+  const response = await fetch(`${BASE_URL}v2/order`, {
     method:  'POST',
     headers: getHeaders(),
     body:    JSON.stringify(payload),
@@ -368,7 +355,6 @@ async function processRefund({ oid, amount, refundRemarks = 'Customer request' }
 
 // ============================================================
 // 7. WEBHOOK VERIFICATION
-//    Call this inside your webhook POST handler
 // ============================================================
 function verifyWebhook(incomingPayload, receivedSign) {
   const { secure_sign, ...rest } = incomingPayload;
@@ -385,4 +371,3 @@ module.exports = {
   processRefund,
   verifyWebhook,
 };
-
