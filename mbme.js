@@ -1,7 +1,7 @@
 // ============================================================
 // MBME PAY - Complete Node.js Integration
-// Base URL  : https://pgapi.mbme.org/api/v2/payments
-// Auth      : Authorisation header (Zk/zb/RXoUgt1gs+vYd1hI9ExshfD6eF6HmvhgZonCs=)
+// Base URL  : https://pgapi.mbme.org/api/v2/payments/create-order
+// Auth      : Authorisation header (Esp5T/yvlmJtsjeup/Ug4cpkY9/8CIt24obJKpu7YrA=)
 // UID       : 343
 // Hash Key  : 69aab37d89de4b3838b30a01
 // ============================================================
@@ -10,8 +10,8 @@ const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 
 // ── Credentials ──────────────────────────────────────────────
-const BASE_URL = 'https://pgapi.mbme.org/api/v2/payments';
-const API_KEY  = 'Zk/zb/RXoUgt1gs+vYd1hI9ExshfD6eF6HmvhgZonCs=';
+const BASE_URL = 'https://pgapi.mbme.org/api/v2/payments/create-order';
+const API_KEY  = 'Esp5T/yvlmJtsjeup/Ug4cpkY9/8CIt24obJKpu7YrA=';
 const UID      = '343';
 const HASH_KEY = '69aab37d89de4b3838b30a01';
 
@@ -62,7 +62,7 @@ function getTimestamp() {
 
 // ============================================================
 // 1. HOSTED PAGE
-//    Endpoint : POST https://pgapi.mbme.org/api/v2/payments
+//    Endpoint : POST https://pgapi.mbme.org/api/v2/payments/create-order
 //    Redirects customer to MBME secure payment page
 // ============================================================
 async function hostedPagePayment({
