@@ -3,7 +3,7 @@ const https = require('https');
 const { v4: uuidv4 } = require('uuid');
 
 const BASE_URL = 'pgapi.mbme.org';
-const API_KEY  = 'Esp5T/yvlmJtsjeup/Ug4cpkY9/8CIt24obJKpu7YrA=';
+const API_KEY  = 'dBFXdcv79Vm7Xp76nEDPC/vaaYTZJKlA28mt3Fa9bXs=';
 const UID      = '343';
 const HASH_KEY = '69aab37d89de4b3838b30a01';
 
