@@ -7,7 +7,6 @@ const API_KEY  = 'dBFXdcv79Vm7Xp76nEDPC/vaaYTZJKlA28mt3Fa9bXs=';
 const UID      = '343';
 const HASH_KEY = '69aab37d89de4b3838b30a01';
 
-// ── Secure Sign (matches PHP: hash('sha256', uid+oid+amount+currency+timestamp+hashkey)) ──
 function generateSecureSign(payload) {
   const uid       = payload.uid || UID;
   const oid       = payload.oid || '';
@@ -22,7 +21,6 @@ function getTimestamp() {
   return new Date().toISOString();
 }
 
-// ── Flatten nested object to form fields: transaction_info[amount] ──
 function flattenForForm(obj, prefix = '') {
   return Object.keys(obj).reduce((acc, key) => {
     const fullKey = prefix ? `${prefix}[${key}]` : key;
@@ -35,7 +33,6 @@ function flattenForForm(obj, prefix = '') {
   }, {});
 }
 
-// ── HTTP Request (form-urlencoded, matches WordPress plugin) ──
 function apiRequest(path, body) {
   return new Promise((resolve, reject) => {
     const flat = flattenForForm(body);
@@ -72,17 +69,10 @@ function apiRequest(path, body) {
   });
 }
 
-// ── 1. Embedded / Hosted Payment ────────────────────────────
 async function createEmbeddedOrder({
-  amount,
-  currency = 'AED',
-  customerName,
-  customerEmail,
-  customerPhone,
-  mobileCountryCode = '+971',
-  referenceNumber,
-  successUrl,
-  failureUrl,
+  amount, currency = 'AED', customerName, customerEmail,
+  customerPhone, mobileCountryCode = '+971', referenceNumber,
+  successUrl, failureUrl,
 }) {
   const oid       = uuidv4();
   const timestamp = getTimestamp();
@@ -98,71 +88,13 @@ async function createEmbeddedOrder({
       mobile_number:       customerPhone || '',
       mobile_country_code: mobileCountryCode,
     },
-    transaction_info: {
-      amount,
-      currency,
-    },
+    transaction_info: { amount, currency },
     payment_info: {
       payment_method_id: 1,
       save_card:         false,
       token_reference:   '',
     },
-    client_info: {
-      reference_number: referenceNumber || '',
-    },
-    response_config: {
-      success_redirect_url: successUrl || '',
-      failure_redirect_url: failureUrl || '',
-    },
-  };
-
-  payload.secure_sign = generateSecureSign(payload);
-
-  const data = await apiRequest('/api/v2/payments/create-order', payload);
-  if (data.status_code !== 0 && data.status !== 'ORDER_CREATED') {
-    throw new Error(data.status_message || data.error || 'Order creation failed');
-  }
-  return { ...data, oid, uid: UID, timestamp };
-}
-
-// ── 2. Hosted Page ───────────────────────────────────────────
-async function hostedPagePayment({
-  amount,
-  currency = 'AED',
-  customerName,
-  customerEmail,
-  customerPhone,
-  mobileCountryCode = '+971',
-  referenceNumber,
-  successUrl,
-  failureUrl,
-}) {
-  const oid       = uuidv4();
-  const timestamp = getTimestamp();
-
-  const payload = {
-    uid:            UID,
-    oid,
-    timestamp,
-    request_method: 'embedded_pay_direct',
-    customer_info: {
-      name:                customerName  || '',
-      email:               customerEmail || '',
-      mobile_number:       customerPhone || '',
-      mobile_country_code: mobileCountryCode,
-    },
-    transaction_info: {
-      amount,
-      currency,
-    },
-    payment_info: {
-      payment_method_id: 1,
-      save_card:         false,
-      token_reference:   '',
-    },
-    client_info: {
-      reference_number: referenceNumber || '',
-    },
+    client_info: { reference_number: referenceNumber || '' },
     response_config: {
       success_redirect_url: successUrl || '',
       failure_redirect_url: failureUrl || '',
@@ -172,22 +104,19 @@ async function hostedPagePayment({
   payload.secure_sign = generateSecureSign(payload);
 
   const data = await apiRequest('/api/v2/payments', payload);
-  if (data.status_code !== 0) throw new Error(data.status_message || 'Hosted payment failed');
-  return data;
+
+  const paymentUrl = data?.result?.payment_url
+    || data?.data?.payment_url
+    || data?.payment_url
+    || data?.redirect_url;
+
+  return { ...data, oid, uid: UID, timestamp, payment_url: paymentUrl };
 }
 
-// ── 3. Payment by Link ───────────────────────────────────────
 async function createPaymentLink({
-  amount,
-  currency = 'AED',
-  customerName,
-  customerEmail,
-  customerPhone,
-  mobileCountryCode = '+971',
-  referenceNumber,
-  expiryUtc,
-  successUrl,
-  failureUrl,
+  amount, currency = 'AED', customerName, customerEmail,
+  customerPhone, mobileCountryCode = '+971', referenceNumber,
+  expiryUtc, successUrl, failureUrl,
 }) {
   const oid           = uuidv4();
   const timestamp     = getTimestamp();
@@ -204,18 +133,10 @@ async function createPaymentLink({
       mobile_number:       customerPhone || '',
       mobile_country_code: mobileCountryCode,
     },
-    transaction_info: {
-      amount,
-      currency,
-    },
-    payment_info: {
-      payment_method_id: '',
-      save_card:         false,
-    },
+    transaction_info: { amount, currency },
+    payment_info: { payment_method_id: '', save_card: false },
     payment_expiry: paymentExpiry,
-    client_info: {
-      reference_number: referenceNumber || '',
-    },
+    client_info: { reference_number: referenceNumber || '' },
     response_config: {
       success_redirect_url: successUrl || '',
       failure_redirect_url: failureUrl || '',
@@ -224,32 +145,22 @@ async function createPaymentLink({
   };
 
   payload.secure_sign = generateSecureSign(payload);
-
   const data = await apiRequest('/api/v2/payments/create-order', payload);
-  if (data.status_code !== 0) throw new Error(data.status_message || 'Payment link failed');
   return data;
 }
 
-// ── 4. Check Payment Status ──────────────────────────────────
 async function checkPaymentStatus(oid) {
   const timestamp = getTimestamp();
-  const payload = {
-    uid:            UID,
-    timestamp,
-    request_method: 'order_status',
-    oid,
-  };
+  const payload = { uid: UID, timestamp, request_method: 'order_status', oid };
   payload.secure_sign = generateSecureSign(payload);
   return await apiRequest('/api/v2/order', payload);
 }
 
-// ── 5. Refund ────────────────────────────────────────────────
 async function processRefund({ oid, amount, refundRemarks = 'Customer request' }) {
   const timestamp = getTimestamp();
   const payload = {
-    uid:            UID,
-    oid,
-    amount:         String(amount),
+    uid: UID, oid,
+    amount: String(amount),
     timestamp,
     request_method: 'process_refund',
     refund_remarks: refundRemarks,
@@ -258,14 +169,12 @@ async function processRefund({ oid, amount, refundRemarks = 'Customer request' }
   return await apiRequest('/api/v2/order', payload);
 }
 
-// ── 6. Verify Webhook ────────────────────────────────────────
 function verifyWebhook(incomingPayload, receivedSign) {
   const { secure_sign, ...rest } = incomingPayload;
   return generateSecureSign(rest) === receivedSign;
 }
 
 module.exports = {
-  hostedPagePayment,
   createEmbeddedOrder,
   createPaymentLink,
   checkPaymentStatus,
