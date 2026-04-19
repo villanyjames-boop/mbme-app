@@ -17,7 +17,7 @@ const HASH_KEY = '69aab37d89de4b3838b30a01';
 
 // ── Secure Sign Generator ────────────────────────────────────
 // Flatten → sort keys alphabetically → join with & → HMAC-SHA256
-function generateSecureSign(e8ca5e43e4f0ee726cb438f2c6f46849fba67f27e6d40b41adbbe7be1f8da871) {
+function generateSecureSign(payload) {
   function flatten(obj, prefix = '') {
     return Object.keys(obj).reduce((acc, key) => {
       const fullKey = prefix ? `${prefix}.${key}` : key;
@@ -49,9 +49,7 @@ function generateSecureSign(e8ca5e43e4f0ee726cb438f2c6f46849fba67f27e6d40b41adbb
 // ── Standard Headers ─────────────────────────────────────────
 function getHeaders() {
   return {
-    'Content-Type':  'application/json',
     'Authorization': API_KEY,
-    'Accept':        'application/json',
   };
 }
 
