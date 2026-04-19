@@ -21,7 +21,7 @@ function generateSecureSign(payload) {
   }
   const flat = flatten(payload);
   const rawSignature = Object.keys(flat).sort().map(k => `${k}=${flat[k]}`).join('&');
-  return crypto.createHmac('sha256', HASH_KEY).update(rawSignature).digest('hex');
+  return crypto.createHash('sha256').update(rawSignature + HASH_KEY).digest('hex');
 }
 
 function getTimestamp() {
